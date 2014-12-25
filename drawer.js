@@ -1,13 +1,16 @@
-function BasicCanvas()
+function PanelCanvas()
 {//assumes <body> exists.
 	//private variables.
 	var id = "flowfield";
 	var width = 500;
 	var height = 500;
 	var styleString = "border:1px solid #000000;";
-	var canvas,context;//to be initialized in the methods.
+	this.canvas = null;
+	var context;//to be initialized in the methods.
 	var mouseDown = 0;//when mouse is held down.
 	var lastpx=-1,lastpy=-1;
+	var drawNew = 1;
+	var threshold = 10;//maximum segment length.
 
 	//private methods.
 	var getMousePos = function(evt)
@@ -16,21 +19,21 @@ function BasicCanvas()
 		var xval = evt.clientX - rect.left;
 		var yval = evt.clientY - rect.top;
 		return { x:xval, y:yval	};
-	}
+	};
 	var clearListener = function(evt)
 	{
 		var mousePos = getMousePos(evt);
 		var px=(mousePos.x);
 		var py=(height-mousePos.y);
 		context.clearRect(0,0,width,height);
-	}
+	};
 	var drawPixel = function(px,py)
 	{
 		context.beginPath();
 		context.moveTo(px, py);
 		context.lineTo(px+1, py+1);
 		context.stroke();
-	}
+	};
 	var pixelDrawListener = function(evt)
 	{
 		if(mouseDown > 0)
@@ -40,14 +43,20 @@ function BasicCanvas()
 			var py=(mousePos.y);
 			drawPixel(px,py);
 		}
-	}
+	};
 	var drawLine = function(px0,py0,px1,py1)
 	{
 		context.beginPath();
 		context.moveTo(px0, py0);
 		context.lineTo(px1, py1);
 		context.stroke();
-	}
+	};
+	var clearMouseDown = function()
+	{
+		mouseDown = 0;
+		lastpx = -1;
+		lastpy = -1;
+	};
 	var lineDrawListener = function(evt)
 	{
 		if(mouseDown > 0)
@@ -64,17 +73,35 @@ function BasicCanvas()
 			lastpx = px;
 			lastpy = py;
 		}
-	}
-	var setMouseDown = function()
+	};
+	var segmentDrawListener = function(evt)
 	{
-		mouseDown = 1;
-	}
-	var clearMouseDown = function()
-	{
-		mouseDown = 0;
-		lastpx = -1;
-		lastpy = -1;
-	}
+		if(mouseDown > 0)
+		{
+			var mousePos = getMousePos(evt);
+			var px=mousePos.x;
+			var py=mousePos.y;
+			if(drawNew<1)
+			{
+				var dx = px-lastpx;
+				var dy = py-lastpy;
+				var distanceFromLast = Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
+				var farenough = distanceFromLast >= threshold;
+				if(farenough)
+				{
+					drawLine(lastpx,lastpy,px,py);
+					lastpx = px;
+					lastpy = py;
+				}
+			}
+			else
+			{
+				lastpx = px;
+				lastpy = py;
+				drawNew = 0;
+			}
+		}
+	};
 	var initialize = function()
 	{
 		canvas = document.createElement("canvas");
@@ -86,25 +113,19 @@ function BasicCanvas()
 		//get context.
 		context = canvas.getContext("2d");
 		//add mouse listeners.
-		canvas.addEventListener('mousemove', lineDrawListener, false);
-		canvas.addEventListener('mousedown', setMouseDown, false);
-		canvas.addEventListener('mouseup', clearMouseDown, false);
-	}
-	//public methods.
-	this.getContext = function()
-	{
-		return context;
-	}
+		canvas.addEventListener('mousemove', segmentDrawListener, false);
+		canvas.addEventListener('mousedown', function(){ mouseDown=1; }, false);
+		canvas.addEventListener('mouseup', function(){ mouseDown=0;drawNew=1; }, false);
+	};
 	this.addToBody = function()
 	{
 		//create and add to page.
 		initialize();
 		document.body.appendChild(canvas);
-	}
-
-}
-SegmentCanvas.prototype = new BasicCanvas();
-function SegmentCanvas()
-{
-
+	};
+	//public methods.
+	this.getContext = function()
+	{
+		return context;
+	};
 }
