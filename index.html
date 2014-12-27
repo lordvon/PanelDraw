@@ -8,9 +8,10 @@
 
 <script src = "panelMethod.js"></script>
 <script src = "drawer.js"></script>
-<script>
-	var canvas = new PanelCanvas();
-	canvas.addToBody();
-</script>
-
+<div id="drawingDiv">
+	<script>
+		var canvas = new PanelCanvas();
+		canvas.addToBody("drawingDiv");
+	</script>
+</div>
 </html>

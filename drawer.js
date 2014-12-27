@@ -149,15 +149,21 @@ function PanelCanvas()
 		canvas.addEventListener('mousedown', function(){ mouseDown=1; }, false);
 		canvas.addEventListener('mouseup', function(){ mouseDown=0;drawNew=1; }, false);
 	};
+	//public methods.
+	this.getContext = function()
+	{
+		return context;
+	};
 	this.addToBody = function()
 	{
 		//create and add to page.
 		initialize();
 		document.body.appendChild(canvas);
 	};
-	//public methods.
-	this.getContext = function()
+	this.addToContainer = function(containerId)
 	{
-		return context;
+		//create and add to page.
+		initialize();
+		document.getElementById(containerId).appendChild(canvas);
 	};
 }
