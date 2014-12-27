@@ -2,8 +2,8 @@ function PanelCanvas()
 {//assumes <body> exists.
 	//private variables.
 	var id = "flowfield";
-	var width = 500;
-	var height = 500;
+	var width = 700;
+	var height = 400;
 	var styleString = "border:1px solid #000000;";
 	this.canvas = null;
 	var context;//to be initialized in the methods.
@@ -11,6 +11,10 @@ function PanelCanvas()
 	var lastpx=-1,lastpy=-1;
 	var drawNew = 1;
 	var threshold = 10;//maximum segment length.
+	var elements = [];
+	var currentElement = -1;//index of elements.
+	var newElement = 0;
+
 
 	//private methods.
 	var getMousePos = function(evt)
@@ -75,6 +79,34 @@ function PanelCanvas()
 		}
 	};
 	var segmentDrawListener = function(evt)
+	{
+		if(mouseDown > 0)
+		{
+			var mousePos = getMousePos(evt);
+			var px=mousePos.x;
+			var py=mousePos.y;
+			if(drawNew<1)
+			{
+				var dx = px-lastpx;
+				var dy = py-lastpy;
+				var distanceFromLast = Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
+				var farenough = distanceFromLast >= threshold;
+				if(farenough)
+				{
+					drawLine(lastpx,lastpy,px,py);
+					lastpx = px;
+					lastpy = py;
+				}
+			}
+			else
+			{
+				lastpx = px;
+				lastpy = py;
+				drawNew = 0;
+			}
+		}
+	};
+	var panelDrawListener = function(evt)
 	{
 		if(mouseDown > 0)
 		{

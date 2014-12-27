@@ -18,9 +18,19 @@ function Point(x,y)
 }
 function Panel(p1,p2)
 {
-	this.centerPoint = p1.getMidpoint(p2);
-	this.segmentLength = p1.getDistance(p2);
-	this.strength = 0;
+	var start = p1;
+	var end = p1;
+	var center = start.getMidpoint(end);
+	var length = start.getDistance(end);
+	var strength = 0;
+}
+function Panel(p1,p2,length)
+{
+	var start = p1;
+	var end = p1;
+	var center = start.getMidpoint(end);
+	var length = length;
+	var strength = 0;
 }
 
 var influenceCoefficient = function(panel1,panel2)
