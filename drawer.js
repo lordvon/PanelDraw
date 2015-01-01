@@ -11,9 +11,19 @@ function PanelCanvas()
 	var lastpx=-1,lastpy=-1;
 	var drawNew = 1;
 	var threshold = 10;//maximum segment length.
-	var elements = [];
+	var elements = [];//last element 
+	var tePanels = [];//panel indices for each element whose first point is a trailing edge.
 	var currentElement = -1;//index of elements.
-	var newElement = 0;
+	var drawNewElement = 1;
+	var lastPoint = null;
+	var controlPanel,elementsList,statusDiv;
+	var closedElement;
+
+	var solution;
+
+
+	//physical constants.
+	var BASEDIM = 5;//a scaling factor for the pixels.
 
 
 	//private methods.
@@ -106,34 +116,95 @@ function PanelCanvas()
 			}
 		}
 	};
+	var drawFilledCircle = function(point)
+	{
+		context.beginPath();
+		context.arc(point.px,point.py,2,0,2*Math.PI);
+		context.stroke();
+	};
+	var drawTE = function(point)
+	{	context.fillStyle = "rgb(255,0,0,1)";
+		context.beginPath();
+		context.arc(point.px,point.py,2,0,2*Math.PI);
+		context.stroke();
+	};
+	var drawLineFromPoints = function(point0,point1)
+	{
+		context.beginPath();
+		context.moveTo(point0.px, point0.py);
+		context.lineTo(point1.px, point1.py);
+		context.stroke();
+	};
+	var prepareNewElement = function()
+	{
+		drawNewElement = 0;
+		currentElement = elements.length;
+		elements.push([]);
+		//console.log(elements.length);
+	}
+	var resetElement = function()
+	{
+		drawNewElement = 1;
+		mouseDown = 0;
+	}
 	var panelDrawListener = function(evt)
 	{
+		var proximityThreshold = 5;//for closing the element.
+		var minimumPanelsPerElement =  5;
 		if(mouseDown > 0)
 		{
 			var mousePos = getMousePos(evt);
 			var px=mousePos.x;
 			var py=mousePos.y;
-			if(drawNew<1)
+			if(drawNewElement<1)
 			{
-				var dx = px-lastpx;
-				var dy = py-lastpy;
-				var distanceFromLast = Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
-				var farenough = distanceFromLast >= threshold;
-				if(farenough)
+				var newPoint = new Point(px,py);
+				if(elements[currentElement].length >= minimumPanelsPerElement)
 				{
-					drawLine(lastpx,lastpy,px,py);
-					lastpx = px;
-					lastpy = py;
+					var startPoint = elements[currentElement][0].startPoint;
+					var distanceFromStart = newPoint.getDistance(startPoint);
+					if(distanceFromStart<=proximityThreshold)
+					{
+						var newPanel = new Panel(lastPoint,startPoint,distanceFromStart);
+						elements[currentElement].push(newPanel);
+						drawLineFromPoints(lastPoint,startPoint);
+						resetElement();
+						//console.log("resetElement triggered");
+						return;
+					}
+				}
+				
+				{
+					var distanceFromLast = newPoint.getDistance(lastPoint);
+					var farenough = distanceFromLast >= threshold;
+					if(farenough){
+						var newPanel = new Panel(lastPoint,newPoint,distanceFromLast);
+						elements[currentElement].push(newPanel);
+						drawLineFromPoints(lastPoint,newPoint);
+						drawFilledCircle(newPoint);
+						lastPoint = newPoint;
+					}
 				}
 			}
 			else
 			{
-				lastpx = px;
-				lastpy = py;
-				drawNew = 0;
+				lastPoint = new Point(px,py);
+				//console.log(px+" "+py);
+				drawFilledCircle(lastPoint);
+				prepareNewElement();
 			}
+			
+			
 		}
 	};
+	var panelDrawMouseUp = function()
+	{
+		mouseDown=0;
+		drawNew=1;
+		drawNewElement=1;
+		updateElementsList();
+		//if(closedElement==0)
+	}
 	var initialize = function()
 	{
 		canvas = document.createElement("canvas");
@@ -145,10 +216,113 @@ function PanelCanvas()
 		//get context.
 		context = canvas.getContext("2d");
 		//add mouse listeners.
-		canvas.addEventListener('mousemove', segmentDrawListener, false);
-		canvas.addEventListener('mousedown', function(){ mouseDown=1; }, false);
-		canvas.addEventListener('mouseup', function(){ mouseDown=0;drawNew=1; }, false);
+		canvas.addEventListener('mousemove', panelDrawListener, false);
+		canvas.addEventListener('mousedown', function(){ mouseDown=1;closedElement=0; }, false);
+		canvas.addEventListener('mouseup', panelDrawMouseUp, false);
 	};
+
+
+
+	//Function for drawing panels and elements.
+	this.drawPanels = function(panels,canvas)
+	{//
+		for(var i=0;i<panels.length;++i)
+		{
+			var startPoint = panels[i].startPoint;
+			var endPoint = panels[i].endPoint;
+			drawFilledCircle(startPoint);
+			drawLine(startPoint.px,startPoint.py,endPoint.px,endPoint.py);
+		}
+	};
+
+	var redraw = function()
+	{
+		context.clearRect(0,0,canvas.width,canvas.height);
+		for(var i = 0;i<elements.length;++i)
+		{
+			var startPoint = elements[i][0].startPoint;
+			drawTE(startPoint);
+			var endPoint = elements[i][0].endPoint;
+			drawLineFromPoints(startPoint,endPoint);
+			for(var j =1;j<elements[i].length;++j)
+			{
+				startPoint = elements[i][j].startPoint;
+				drawFilledCircle(startPoint);
+				endPoint = elements[i][j].endPoint;
+				drawLineFromPoints(startPoint,endPoint);
+			}
+		}
+	}
+	//Control panel for panels and elements.
+	function deleteLastElement()
+	{
+		elements.pop();
+		tePanels.pop();
+		currentElement = elements.length-1; 
+	}
+	var deleteLastElementListener = function()
+	{
+		deleteLastElement();
+		redraw();
+		updateElementsList();
+	}
+	var createControlPanelButton = function(id,text,listener)
+	{
+		var newButton = document.createElement("button");
+		newButton.id = id;
+		newButton.innerHTML = text;
+		newButton.addEventListener("click",listener,false);
+		controlPanel.appendChild(newButton);
+	}
+	function updateElementsList()
+	{
+		elementsList.innerHTML = '';
+		for(var i=0;i<elements.length;++i)
+		{
+			var newItem = document.createElement("li");
+			newItem.innerHTML = "Element "+i+" ("+elements[i].length+" panels)";
+			elementsList.appendChild(newItem);
+		}
+	}
+	var solveListener = function()
+	{
+		statusDiv.innerHTML = "Solving...";
+		system = new LinearSystem(elements);
+		//solution = system.x;
+		statusDiv.innerHTML = "Done! ";
+		//console.log("System totals: "+system.totalcl+", "+system.totalcd);
+		//statusDiv.innerHTML += "CL: "+(0.00+system.totalcl)+", CD: "+(0.00+system.totalcd);
+		statusDiv.innerHTML += "CL: "+(system[0])+", CD: "+(system[1]);
+	}
+	var initializeControlPanel = function()
+	{
+		controlPanel = document.createElement("div");
+		createControlPanelButton("deleteLastElement","Delete Last Element",deleteLastElementListener);
+		createControlPanelButton("solve","Solve",solveListener);
+		statusDiv = document.createElement("div");
+		controlPanel.appendChild(statusDiv);
+		elementsList = document.createElement("ol");
+		controlPanel.appendChild(elementsList);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//public methods.
 	this.getContext = function()
 	{
@@ -165,5 +339,93 @@ function PanelCanvas()
 		//create and add to page.
 		initialize();
 		document.getElementById(containerId).appendChild(canvas);
+		initializeControlPanel();
+		document.getElementById(containerId).appendChild(controlPanel);
 	};
+
+
+
+	//Post-processing
+	var getRed = function(normalizedValue)
+	{
+		//normalizedValue is between 0 and 1, inclusive.
+		var red=0;
+		if(normalizedValue<0.5){
+			if(normalizedValue>=0.25){
+				red=1-(normalizedValue-0.25)*4;
+			}
+			else if(normalizedValue>=0){
+				red=1;
+			}
+		}
+		return parseInt(red*255);
+	}
+	var getGreen = function(normalizedValue)
+	{
+		//normalizedValue is between 0 and 1, inclusive.
+		var green=0;
+		if(normalizedValue>=0.75){
+			green=1-(normalizedValue-0.75)*4;
+		}
+		else if(normalizedValue>=0.5){
+			green=1;
+		}
+		else if(normalizedValue>=0.25){
+			green=1;
+		}
+		else if(normalizedValue>=0){
+			green=normalizedValue*4;
+		}
+		return parseInt(green*255);
+	}
+	var getBlue = function(normalizedValue)
+	{
+		//normalizedValue is between 0 and 1, inclusive.
+		var blue=0;
+		if(normalizedValue>=0.75){
+			blue=1;
+		}
+		else if(normalizedValue>=0.5){
+			blue=(normalizedValue-0.5)*4;
+		}
+		return parseInt(blue*255);
+	}
+
+	this.phiColor = function(phi,imax,jmax,maxPhi,minPhi)
+	{//assumed globals: imax,jmax,phi,context
+		//getPhiExtremes();
+		
+		for (var j=0;j<jmax-1;j++) {
+			for (var i=0;i<imax-1;i++) {
+				var pi=padding+i/(imax-1)*pimax;
+				var nextpi=padding+(i+1)/(imax-1)*pimax;
+				var pj=padding+j/(jmax-1)*pjmax;
+				var nextpj=padding+(j+1)/(jmax-1)*pjmax;
+
+				var ii=parseInt(i)+parseInt(j*imax);
+				var v0=phi[ii];
+				var v1=phi[ii+1];
+				var v2=phi[parseInt(ii)+1+parseInt(imax)];
+				var v3=phi[parseInt(ii)+parseInt(imax)];
+				//window.alert("v0: "+v0+", v1: "+v1+", v2: "+v2+", v3: "+v3);
+				var average = (v0+v1+v2+v3)/4;
+				//window.alert(average);
+				var fraction=0;
+				if(maxPhi-minPhi != 0){
+					fraction=(average-minPhi)/(maxPhi-minPhi);
+				}
+				//window.alert(getRed(fraction)+", "+getGreen(fraction)+", "+getBlue(fraction));
+				context.fillStyle = "rgba("+
+					getRed(fraction)+","+
+					getGreen(fraction)+","+
+					getBlue(fraction)+","+
+					(1)+")";
+				var bw=nextpi-pi+1;
+				var bh=nextpj-pj+1;
+				//window.alert(parseInt(pi)+", "+(parseInt(pjmax)+parseInt(padding)-pj)+", "+bw+", "+bh);
+				context.fillRect( pi, parseInt(pjmax)+parseInt(padding)-pj, 
+						bw, bh );
+			}
+		}
+	}
 }

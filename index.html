@@ -8,10 +8,14 @@
 
 <script src = "panelMethod.js"></script>
 <script src = "drawer.js"></script>
+<!--<script src = "http://numericjs.com/lib/numeric-1.2.6.min.js"></script>-->
+<script src = "numeric-1.2.6.js"></script>
+<p>Draw-Your-Own Vortex Panels!<br />
+Draw the TE first (will be colored red; Kutta condition will be applied here).</p>
 <div id="drawingDiv">
 	<script>
 		var canvas = new PanelCanvas();
-		canvas.addToBody("drawingDiv");
+		canvas.addToContainer("drawingDiv");
 	</script>
 </div>
 </html>

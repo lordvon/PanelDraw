@@ -1,7 +1,7 @@
 %  Panel Code in MATLAB
 %  Coded by L. sankar, April 1997
 %  Open a File and read airfoil coordinates
-fid = fopen('panel.data.txt','r')
+fid = fopen('test.txt','r')
 % Read Angle of Attack
 alpha = fscanf(fid,'%f',1);
 % read number of points on the upper side of airfoil
@@ -45,6 +45,7 @@ else
 end
 fclose(fid);
 % Plot the airfoil on window #1
+% title('Airfoil');
 plot(x,y);
 n=nu+nl-2;
 A=zeros(n+1,n+1);
@@ -62,22 +63,29 @@ for j = 1:n
    if i == j
      a(i,i) = ds(i)/(2.*pi) *(log(0.5*ds(i)) - 1.0);
    else
+     %midpoints of panel
      xm1 = 0.5 * (x(j)+x(j+1));
      ym1 = 0.5 * (y(j)+y(j+1));
+     %ordinate/abscissa delta, normalized by total panel length.
      dx  = (x(i+1)-x(i))/ds(i);
      dy  = (y(i+1)-y(i))/ds(i);
+     %distance from panel midpoint to start point
      t1  = x(i) - xm1;
      t2  = y(i) - ym1;
+     %distance from panel midpoint to end point
      t3  = x(i+1) - xm1;
      t7  = y(i+1) - ym1;
+     %???
      t4  = t1 * dx + t2 * dy;
      t5  = t3 * dx + t7 * dy;
      t6  = t2 * dx - t1 * dy;
+     
      t1  = t5 * log(t5*t5+t6*t6) - t4 * log(t4*t4+t6*t6);
      t2  = atan2(t6,t4)-atan2(t6,t5);
      a(j,i) = (0.5 * t1-t5+t4+t6*t2)/(2.*pi);
    end
  end
+%Kutta Condition!
 a(n+1,1) = 1.0;
 a(n+1,n) = 1.0;
 end
