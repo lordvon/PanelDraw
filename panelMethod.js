@@ -90,7 +90,7 @@ function LinearSystem(elements)
 	var fillElementTotalCirculation = function()
 	{//Fills entries in A for the total circulation 
 		//for every element.
-		for(var j = allPanels;j<dimA;j+=)
+		for(var j = allPanels;j<dimA;j+=1)
 		{
 			for(var i=0;i<allPanels;++i)
 			{
