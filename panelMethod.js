@@ -73,10 +73,9 @@ function LinearSystem(elements)
 	this.cm = [];
 	this.chordpx = 0;
 	this.normc = 0;//the inverse of chordpx, to to multiplications instead of divisions.
-	this.totalcl = 0;
-	this.totalcd = 0;
+	this.totalcl = 1;
+	this.totalcd = 1;
 	this.totalcm = 0; 
-	var output = [];
 	var ne = elements.length;
 	var allPanels = 0;
 	for(var i=0;i<ne;++i)
@@ -163,6 +162,7 @@ function LinearSystem(elements)
 				{
 					var ipanel = elements[e][i];
 					var ds = ipanel.panelLength;//this.chordpx;
+					//detectNaN(ds);
 					//console.log()
 					if(i==j)
 					{
@@ -175,6 +175,7 @@ function LinearSystem(elements)
 						var nidx = ipanel.dpx/ds;
 						var nidy = ipanel.dpy/ds;
 						var ip0 = ipanel.startPoint;//start point of ipanel.
+						//console.log("normc in fillInfluenceCoefficients: "+this.normc);
 						var jctoip0_dx = jc.getDpx(ip0)*this.normc;
 						var jctoip0_dy = jc.getDpy(ip0)*this.normc;
 						var ip1 = ipanel.endPoint;//end point of ipanel.
@@ -188,8 +189,25 @@ function LinearSystem(elements)
 						var t1 = d2*Math.log(d2*d2+d3*d3) - d1*Math.log(d1*d1+d3*d3);
 						var t2 = Math.atan2(d3,d1) - Math.atan2(d3,d2);
 						
-						A[j][i] = (0.5*jctoip0_dx-d2+d1+d3*jctoip0_dy)/(2*Math.PI);
+						A[j][i] = (0.5*t1-d2+d1+d3*t2)/(2.0*Math.PI);
 						//detectNaN(A[i][j]);
+						if(false)//(j==0 && i==1)
+						{
+							console.log("nidx: "+nidx);
+							console.log("nidy: "+nidy);
+							//console.log("ip0: "+ip0);
+							console.log("jctoip0_dx: "+jctoip0_dx);
+							console.log("jctoip0_dy: "+jctoip0_dy);
+							//console.log("ip1: "+ip1);
+							console.log("jctoip1_dx: "+jctoip1_dx);
+							console.log("jctoip1_dy: "+jctoip1_dy);
+							console.log("d1: "+d1);
+							console.log("d2: "+d2);
+							console.log("d3: "+d3);
+							console.log("t1: "+t1);
+							console.log("t2: "+t2);
+							console.log("A[j][i]: "+A[j][i]);
+						}
 					}
 					//console.log("Filled row "+i+" (max: "+(np-1)+")");
 					//if(i==np-1)
@@ -234,8 +252,8 @@ function LinearSystem(elements)
 			}
 		}
 		this.chordpx = maxx - minx;
-		this.normc = 1/this.chordpx;
-		console.log("Chord in pixels: "+this.chordpx);
+		this.normc = 1.0/this.chordpx;
+		//console.log("Chord in pixels: "+this.chordpx);
 		//apply nomralization to all panels
 		for(var e=0;e<elements.length;++e)
 		{
@@ -245,16 +263,16 @@ function LinearSystem(elements)
 			}
 		}
 	}
-	function extractPerformanceMetrics()
+	var extractPerformanceMetrics = function()
 	{
 		var totalcx = 0;
 		var totalcy = 0;
 		var currentStart = 0;
-		console.log("Printing Circulation Strength: ");
-		console.log(x);
+		//console.log("Printing Circulation Strength: ");
+		//console.log(x);
 		for(var e=0;e<elements.length;++e)
 		{
-			console.log("Element "+e+", "+elements[e].length+" panels");
+			//console.log("Element "+e+", "+elements[e].length+" panels");
 			for(var p=0;p<elements[e].length;++p)
 			{
 				var gi = currentStart+p;
@@ -272,24 +290,53 @@ function LinearSystem(elements)
 		}
 		this.totalcl = totalcy*Math.cos(AOA) - totalcx*Math.sin(AOA);
 		this.totalcd = totalcy*Math.sin(AOA) + totalcx*Math.cos(AOA);
+		this.totalcl = -this.totalcl;
 		//console.log("System totals 1: "+this.totalcl+", "+this.totalcd);
-		output.push(this.totalcd);
-		output.push(this.totalcl);
 	}
 
+	var displayA = function()
+	{
+		for(var i=0;i<dimA;++i)
+		{
+			console.log(A[i]);
+		}
+	};
+	var displayDs = function()
+	{
+		for(var i=0;i<elements[0].length;++i)
+		{
+			console.log(elements[0][i].panelLength);
+		}
+	};
 	//alert("Starting the solver...");
 	initializeToZero();
 	getChord();
+	//console.log("normc after getChord(): "+normc);
 	//alert("Filling the matrix ("+A.length+" x "+A[A.length-1].length+")...");
 	fillElementTotalCirculation();
 	fillInfluenceCoefficients();
 	applyKuttaCondition();
 	//alert("Filling the RHS...");
 	fillRHS();
+	//console.log("normc after fillRHS(): "+normc);
+
+	//displayA();
+	//displayDs();
+
 	//alert("Calling the linear system solver...");
 	solveSystem();
 	//alert("Done!");
 	extractPerformanceMetrics();
-	//console.log("System totals 2: "+this.totalcl+", "+this.totalcd);
-	return output;
-}
+
+	//console.log("System totals 2: "+totalcl+", "+totalcd);
+
+	this.getCl = function()
+	{
+		//console.log(totalcl);
+		return totalcl;
+	};
+	this.getCd = function()
+	{
+		return totalcd;
+	};
+};

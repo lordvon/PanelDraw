@@ -16,7 +16,8 @@ function PanelCanvas()
 	var currentElement = -1;//index of elements.
 	var drawNewElement = 1;
 	var lastPoint = null;
-	var controlPanel,elementsList,statusDiv;
+	var controlPanel,elementsList,statusDiv
+	//var loadDiv;
 	var closedElement;
 
 	var solution;
@@ -219,7 +220,7 @@ function PanelCanvas()
 		canvas.addEventListener('mousemove', panelDrawListener, false);
 		canvas.addEventListener('mousedown', function(){ mouseDown=1;closedElement=0; }, false);
 		canvas.addEventListener('mouseup', panelDrawMouseUp, false);
-	};
+	}
 
 
 
@@ -233,7 +234,7 @@ function PanelCanvas()
 			drawFilledCircle(startPoint);
 			drawLine(startPoint.px,startPoint.py,endPoint.px,endPoint.py);
 		}
-	};
+	}
 
 	var redraw = function()
 	{
@@ -286,14 +287,31 @@ function PanelCanvas()
 	}
 	var solveListener = function()
 	{
-		statusDiv.innerHTML = "Solving...";
-		system = new LinearSystem(elements);
-		//solution = system.x;
-		statusDiv.innerHTML = "Done! ";
-		//console.log("System totals: "+system.totalcl+", "+system.totalcd);
-		//statusDiv.innerHTML += "CL: "+(0.00+system.totalcl)+", CD: "+(0.00+system.totalcd);
-		statusDiv.innerHTML += "CL: "+(system[0])+", CD: "+(system[1]);
+		//console.log("Number of elements at solver call: "+elements.length);
+		if(elements.length>0)
+		{
+			statusDiv.innerHTML = "Solving...";
+			system = new LinearSystem(elements);
+			//solution = system.x;
+			statusDiv.innerHTML = "Done! ";
+			//console.log("System totals: "+system.totalcl+", "+system.totalcd);
+			//statusDiv.innerHTML += "CL: "+(0.00+system.totalcl)+", CD: "+(0.00+system.totalcd);
+			//console.log(system.getCl())
+			statusDiv.innerHTML += "CL: "+system.getCl()+", CD: "+system.getCd();
+		}
+		else
+		{
+			statusDiv.innerHTML = "No elements to compute on.";
+		}
 	}
+	//var loadListener = function()
+	//{
+	//	loadDiv.innerHTML = "Loading file...";
+
+
+
+	//	loadDiv.innerHTML = "Done!";
+	//}
 	var initializeControlPanel = function()
 	{
 		controlPanel = document.createElement("div");
@@ -303,10 +321,45 @@ function PanelCanvas()
 		controlPanel.appendChild(statusDiv);
 		elementsList = document.createElement("ol");
 		controlPanel.appendChild(elementsList);
+		//loadDiv = document.createElement("div");
+		//document.createElement("input");
+		//input.type = "text"
+		//createControlPanelButton("load","Load",loadListener);
+		//controlPanel.appendChild(loadDiv);
 	}
 
+	var initializeTestCase = function()
+	{
+		var newElement = [];
+		var cx = width/2;
+		var cy = height/2;
+		var le = new Point(cx,cy);
+		var u2 = new Point(cx+20,cy-10);
+		var u3 = new Point(cx+60,cy-10);
+		var u4 = new Point(cx+80,cy-5);
+		var te = new Point(cx+100,cy);
 
+		var l2 = new Point(cx+20,cy+10);
+		var l3 = new Point(cx+60,cy+10);
+		var l4 = new Point(cx+80,cy+5);
 
+		var p1 = new Panel(te,l4,te.getDistance(l4));
+		var p2 = new Panel(l4,l3,l4.getDistance(l3));
+		var p3 = new Panel(l3,l2,l3.getDistance(l2));
+		var p4 = new Panel(l2,le,l2.getDistance(le));
+		var p5 = new Panel(le,u2,le.getDistance(u2));
+		var p6 = new Panel(u2,u3,u2.getDistance(u3));
+		var p7 = new Panel(u3,u4,u3.getDistance(u4));
+		var p8 = new Panel(u4,te,u4.getDistance(te));
+
+		elements.push([]);
+		elements[0] = [p1,p2,p3,p4,p5,p6,p7,p8];
+		//console.log(elements.length);
+		//console.log(elements[0]);
+		redraw();
+		updateElementsList();
+
+	};
 
 
 
@@ -341,6 +394,7 @@ function PanelCanvas()
 		document.getElementById(containerId).appendChild(canvas);
 		initializeControlPanel();
 		document.getElementById(containerId).appendChild(controlPanel);
+		initializeTestCase();
 	};
 
 
