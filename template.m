@@ -1,7 +1,9 @@
 %  Panel Code in MATLAB
 %  Coded by L. sankar, April 1997
 %  Open a File and read airfoil coordinates
-fid = fopen('test.txt','r')
+clear; clc;
+%fid = fopen('test.txt','r');
+fid = fopen('panel.data.txt','r')
 % Read Angle of Attack
 alpha = fscanf(fid,'%f',1);
 % read number of points on the upper side of airfoil
@@ -80,9 +82,25 @@ for j = 1:n
      t5  = t3 * dx + t7 * dy;
      t6  = t2 * dx - t1 * dy;
      
+     t10=t1;
+     t20=t2;
      t1  = t5 * log(t5*t5+t6*t6) - t4 * log(t4*t4+t6*t6);
      t2  = atan2(t6,t4)-atan2(t6,t5);
      a(j,i) = (0.5 * t1-t5+t4+t6*t2)/(2.*pi);
+     if j==1 && i==2
+         disp(['dx: ' num2str(dx)])
+         disp(['dy: ' num2str(dy)])
+         disp(['t10: ' num2str(t10)])
+         disp(['t20: ' num2str(t20)])
+         disp(['t3: ' num2str(t3)])
+         disp(['t7: ' num2str(t7)])
+         disp(['t4: ' num2str(t4)])
+         disp(['t5: ' num2str(t5)])
+         disp(['t6: ' num2str(t6)])
+         disp(['t1: ' num2str(t1)])
+         disp(['t2: ' num2str(t2)])
+         disp(['a(j,i): ' num2str(a(j,i))])
+     end
    end
  end
 %Kutta Condition!
@@ -101,6 +119,11 @@ end
 gamma = zeros(n+1,1);
 % Solve the syetm of equations
 % In MATLAB this is easy!
+a
+rhs
+%x'
+%y'
+%ds'
 gamma = a\rhs;
 cp=zeros(n,1);
 cp1=zeros(n,1);
