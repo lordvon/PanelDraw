@@ -124,10 +124,12 @@ function PanelCanvas()
 		context.stroke();
 	};
 	var drawTE = function(point)
-	{	context.fillStyle = "rgb(255,0,0,1)";
+	{
 		context.beginPath();
 		context.arc(point.px,point.py,2,0,2*Math.PI);
 		context.stroke();
+		context.fillStyle = "#FF0000";
+		context.fill();
 	};
 	var drawLineFromPoints = function(point0,point1)
 	{
@@ -158,7 +160,7 @@ function PanelCanvas()
 			var px=mousePos.x;
 			var py=mousePos.y;
 			if(drawNewElement<1)
-			{
+			{//continue drawing an element
 				var newPoint = new Point(px,py);
 				if(elements[currentElement].length >= minimumPanelsPerElement)
 				{
@@ -188,10 +190,10 @@ function PanelCanvas()
 				}
 			}
 			else
-			{
+			{//Start a new element!
 				lastPoint = new Point(px,py);
 				//console.log(px+" "+py);
-				drawFilledCircle(lastPoint);
+				drawTE(lastPoint);
 				prepareNewElement();
 			}
 			
@@ -200,6 +202,16 @@ function PanelCanvas()
 	};
 	var panelDrawMouseUp = function()
 	{
+		if(drawNewElement < 1)
+		{//For the case when the element is incomplete but the mouse is let up.
+			//a closing panel is drawn automatically.
+			var startPoint = elements[currentElement][0].startPoint;
+			var distanceFromStart = lastPoint.getDistance(startPoint);
+			var newPanel = new Panel(lastPoint,startPoint,distanceFromStart);
+			elements[currentElement].push(newPanel);
+			drawLineFromPoints(lastPoint,startPoint);
+		}
+		
 		mouseDown=0;
 		drawNew=1;
 		drawNewElement=1;
